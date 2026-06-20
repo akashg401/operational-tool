@@ -26,7 +26,7 @@ from openpyxl.styles import (
 # -------------------------
 # Page config + CSS
 # -------------------------
-st.set_page_config(page_title="📄 PDF Tools", layout="centered", initial_sidebar_state="auto")
+st.set_page_config(page_title="📄 OPERATIONAL Tools", layout="centered", initial_sidebar_state="auto")
 
 st.markdown(
     """
@@ -52,7 +52,7 @@ st.markdown(
 )
 
 # Tooltip in title
-st.markdown('<h1 title="Made by AG with ❤️">📄 PDF Tools</h1>', unsafe_allow_html=True)
+st.markdown('<h1 title="Made by AG with ❤️">📄 OPERATIONAL Tools</h1>', unsafe_allow_html=True)
 st.write("")
 
 # -------------------------
@@ -67,6 +67,9 @@ if "invoice_result" not in st.session_state:
 if "csv_formatter_result" not in st.session_state:
     st.session_state["csv_formatter_result"] = None
 
+if "merger_uploader_key" not in st.session_state:
+    st.session_state["merger_uploader_key"] = 0    
+
 def go_home():
     st.session_state["page"] = "home"
 
@@ -78,6 +81,9 @@ def go_merge():
 
 def go_csv():
     st.session_state["page"] = "csv"
+
+def go_report_merger():
+    st.session_state["page"] = "report_merger"    
 
 def go_policy():
     st.session_state["page"] = "policy"
@@ -970,7 +976,7 @@ def run_csv_formatter():
 # Home page
 # -------------------------
 if st.session_state["page"] == "home":
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
         st.button("🪓 Split PDF", use_container_width=True, on_click=go_split)
@@ -988,9 +994,14 @@ if st.session_state["page"] == "home":
         st.caption("Format Excel data into portal-ready CSV files.")
     
     with col4:
-        st.button("📰 Download PDFs", use_container_width=True, on_click=go_policy)
+        st.button("⬇️ Download PDFs", use_container_width=True, on_click=go_policy)
 
         st.caption("Download issued policy PDFs.")
+
+    with col5:
+        st.button("🔀 Merge Policy Reports", use_container_width=True, on_click=go_report_merger)
+
+        st.caption("Merge policy reports into a single file.")    
 
     st.markdown("<hr>", unsafe_allow_html=True)
     st.markdown("<div class='muted'>Choose a tool to get started.</div>", unsafe_allow_html=True)
@@ -1576,6 +1587,87 @@ Elapsed Time: {int(elapsed)} sec
                 file_name=zip_path.name,
                 mime="application/zip"
             )
+
+    st.markdown("<hr>", unsafe_allow_html=True)
+    st.markdown("<div class='footer'>Made by AG with ❤️</div>", unsafe_allow_html=True)
+
+
+# -------------------------
+# Policy Details Merger page
+# -------------------------
+if st.session_state["page"] == "report_merger":
+
+    st.markdown("### Policy Report Merger")
+
+    st.button(
+        "⬅️ Back to Home",
+        on_click=go_home
+    )
+
+       
+
+    uploaded_files = st.file_uploader(
+        "Upload Policy Reports",
+        type=["xlsx"],
+        accept_multiple_files=True,
+        key=f"merger_{st.session_state['merger_uploader_key']}"
+    )
+
+    if st.button("🔄 Reset Merger"):
+
+        st.session_state["merger_uploader_key"] += 1
+
+        st.rerun()
+
+    if uploaded_files:
+
+        from modules.policy_report_merger import (
+            merge_policy_reports,
+            export_merged_report
+        )
+
+        merged_df, summary = merge_policy_reports(
+            uploaded_files
+        )
+
+        st.metric(
+            "Files Uploaded",
+            summary["files_uploaded"]
+        )
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.metric(
+                "Rows Read",
+                summary["rows_read"]
+            )
+
+        with col2:
+            st.metric(
+                "Duplicates Removed",
+                summary["duplicates_removed"]
+            )
+
+        with col3:
+            st.metric(
+                "Final Records",
+                summary["final_records"]
+            )
+
+        st.dataframe(
+            merged_df.head(20),
+            use_container_width=True
+        )
+
+        st.download_button(
+            "📥 Download Merged Report",
+            export_merged_report(
+                merged_df
+            ),
+            file_name="Combined_Policy_Report.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
     st.markdown("<hr>", unsafe_allow_html=True)
     st.markdown("<div class='footer'>Made by AG with ❤️</div>", unsafe_allow_html=True)
