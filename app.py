@@ -26,13 +26,18 @@ from openpyxl.styles import (
 # -------------------------
 # Page config + CSS
 # -------------------------
-st.set_page_config(page_title="📄 OPERATIONAL Tools", layout="centered", initial_sidebar_state="auto")
+st.set_page_config(
+    page_title="Operations Toolkit",
+    layout="centered",
+    initial_sidebar_state="auto"
+)
+
 
 st.markdown(
     """
     <style>
     .stApp {
-        background-color: #f7f7f8;
+        background-color: #f7f7f7;
     }
     .big-card {
         border: 1px solid #e6e6e6;
@@ -51,9 +56,34 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+st.markdown("""
+<style>
+.block-container {
+    padding-top: 2.5rem;
+    padding-bottom: 0.5rem;
+}
+
+h2, h3 {
+    margin-bottom: 0.8rem;
+}
+
+div[data-testid="stVerticalBlock"] {
+    gap: 0.6rem;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # Tooltip in title
-st.markdown('<h1 title="Made by AG with ❤️">📄 OPERATIONAL Tools</h1>', unsafe_allow_html=True)
-st.write("")
+st.markdown(
+    """
+    <h1 title="Made by AG with ❤️">
+    🚀 Operations Toolkit
+    </h1>
+    """,
+    unsafe_allow_html=True
+)
+
+
 
 # -------------------------
 # Navigation + session
@@ -967,45 +997,138 @@ def run_csv_formatter():
                         file_name=csv_name,
                         mime="text/csv"
                     )
+    st.markdown("---")
+    st.markdown(
+        "<div class='footer'>Made by AG with ❤️</div>",
+        unsafe_allow_html=True
+        )
 
-                st.markdown("<hr>", unsafe_allow_html=True)
-
-        st.markdown("<div class='footer'>Made by AG with ❤️</div>", unsafe_allow_html=True)
 
 # -------------------------
 # Home page
 # -------------------------
 if st.session_state["page"] == "home":
-    col1, col2, col3, col4, col5 = st.columns(5)
+
+    # st.markdown("## 🚀 ASEGO Operations Toolkit")
+
+    st.caption(
+        "Automation tools for policy operations, downloads and reporting."
+    )
+
+    
+
+    # col1, col2, col3 = st.columns(3)
+
+    # #
+    # with col1:
+    #     st.metric(
+    #         "Tools Available",
+    #         "5"
+    #     )
+
+    # with col2:
+    #     st.metric(
+    #         "Version",
+    #         "1.0"
+    #     )
+
+    # with col3:
+    #     st.metric(
+    #         "Status",
+    #         "Ready"
+    #     )
+    # #
+
+    
+    st.markdown("### ⚙️ Operations Tools")
+
+    col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.button("🪓 Split PDF", use_container_width=True, on_click=go_split)
 
-        st.caption("Split a combined PDF into individual policy PDFs or invoices.")
+        st.button(
+            "📊 Format CSV",
+            use_container_width=True,
+            on_click=go_csv
+        )
+
+        st.caption(
+            "Format Excel data into portal-ready files."
+        )
 
     with col2:
-        st.button("📎 Merge PDF", use_container_width=True, on_click=go_merge)
 
-        st.caption("Upload multiple PDFs and merge them into a single file.")
+        st.button(
+            "⬇️ Download PDFs",
+            use_container_width=True,
+            on_click=go_policy
+        )
+
+        st.caption(
+            "Download issued policy PDFs."
+        )
 
     with col3:
-        st.button("📊 Format CSV", use_container_width=True, on_click=go_csv)
 
-        st.caption("Format Excel data into portal-ready CSV files.")
-    
-    with col4:
-        st.button("⬇️ Download PDFs", use_container_width=True, on_click=go_policy)
+        st.button(
+            "🔀 Merge Policy Reports",
+            use_container_width=True,
+            on_click=go_report_merger
+        )
 
-        st.caption("Download issued policy PDFs.")
+        st.caption(
+            "Merge multiple policy reports into one file."
+        )
 
-    with col5:
-        st.button("🔀 Merge Policy Reports", use_container_width=True, on_click=go_report_merger)
 
-        st.caption("Merge policy reports into a single file.")    
 
-    st.markdown("<hr>", unsafe_allow_html=True)
-    st.markdown("<div class='muted'>Choose a tool to get started.</div>", unsafe_allow_html=True)
-    st.markdown("<div class='footer'>Made by AG with ❤️</div>", unsafe_allow_html=True)
+    st.markdown("### 📄 Document Tools")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        st.button(
+            "🪓 Split PDF",
+            use_container_width=True,
+            on_click=go_split
+        )
+
+        st.caption(
+            "Split combined PDFs into individual policy PDFs."
+        )
+
+    with col2:
+
+        st.button(
+            "📎 Merge PDF",
+            use_container_width=True,
+            on_click=go_merge
+        )
+
+        st.caption(
+            "Merge multiple PDFs into a single file."
+        )
+
+    st.markdown("---")
+
+    # st.markdown(
+    #     """
+    #     #### Current Modules
+
+    #     ✅ PDF Splitter  
+    #     ✅ PDF Merger  
+    #     ✅ CSV Formatter  
+    #     ✅ Policy Downloader  
+    #     ✅ Policy Report Merger  
+    #     """
+    # )
+
+    st.markdown(
+        "<div class='footer'>Made by AG with ❤️</div>",
+        unsafe_allow_html=True
+    )
+
 
 # -------------------------
 # Split page
