@@ -3,3 +3,4 @@ pandas
 openpyxl
 pypdf
 pdfplumber
+XlsxWriter==3.2.9

@@ -212,35 +212,18 @@ def build_highlighted_excel(
     # ----------------------------
     # DOLPHIN PORTAL
     # ----------------------------
+    
     if portal_key == "new":
+        with pd.ExcelWriter(
+            output,
+            engine="xlsxwriter"
+        ) as writer:
 
-        wb = load_workbook(
-            "GroupPolicySample.xlsx"
-        )
-
-        worksheet = wb.active
-
-        if worksheet.max_row > 1:
-            worksheet.delete_rows(
-                2,
-                worksheet.max_row
+            df.to_excel(
+                writer,
+                sheet_name="Dolphin Upload",
+                index=False
             )
-
-        for row_idx, row in enumerate(
-            df.values.tolist(),
-            start=2
-        ):
-            for col_idx, value in enumerate(
-                row,
-                start=1
-            ):
-                worksheet.cell(
-                    row=row_idx,
-                    column=col_idx,
-                    value=value
-                )
-
-        wb.save(output)
 
         output.seek(0)
 
@@ -911,7 +894,7 @@ def run_csv_formatter():
         st.subheader("Preview")
         st.dataframe(final_export.head(), use_container_width=True)
 
-        
+
 
         highlighted_xlsx = build_highlighted_excel(final_export, error_report, portal_key)
 
@@ -949,39 +932,16 @@ def run_csv_formatter():
 
                     with pd.ExcelWriter(
                         output,
-                        engine="openpyxl"
+                        engine="xlsxwriter"
                     ) as writer:
 
                         batch["data"].to_excel(
                             writer,
+                            sheet_name="Dolphin Upload",
                             index=False
                         )
 
-                        worksheet = writer.book.active
-
-                        header_font = Font(
-                            name="Calibri",
-                            size=11,
-                            bold=True
-                        )
-
-                        normal_font = Font(
-                            name="Calibri",
-                            size=11,
-                            bold=False
-                        )
-
-                        cell_alignment = Alignment(
-                            horizontal="general",
-                            vertical="bottom"
-                        )
-
-                        no_border = Border()
-
-                        for cell in worksheet[1]:
-                            cell.font = header_font
-                            cell.alignment = cell_alignment
-                            cell.border = no_border
+                    output.seek(0)
 
                     st.download_button(
                         label=batch["name"],
