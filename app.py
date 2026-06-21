@@ -15,13 +15,7 @@ from modules.pax.pipeline import process_file
 from openpyxl.styles import PatternFill
 from datetime import date
 from copy import copy
-from openpyxl import load_workbook
-from openpyxl.styles import (
-    PatternFill,
-    Font,
-    Border,
-    Alignment
-)
+
 
 
 # -------------------------
@@ -305,7 +299,7 @@ def build_highlighted_excel(
     output.seek(0)
 
     return output.getvalue()
-    print(df.columns.tolist())
+   
 
 # -------------------------
 # Policy metadata helpers
