@@ -2,6 +2,7 @@ import streamlit as st
 from pypdf import PdfReader, PdfWriter
 import pdfplumber
 import io
+import os
 import zipfile
 import re
 import time
@@ -775,35 +776,40 @@ def run_csv_formatter():
                 "Formatting data and validating records..."
                 ):
 
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+                with tempfile.NamedTemporaryFile(
+                    delete=False,
+                    suffix=".xlsx",
+                ) as tmp:
                     tmp.write(uploaded_file.read())
                     input_path = tmp.name
 
-                pin_master_path = "pin_master.xlsx"
+                try:
+                    pin_master_path = "pin_master.xlsx"
 
-                portal_key = {
-                "Dolphin portal": "new",
-                "Global portal": "old",
-                }[portal_type]
+                    portal_key = {
+                        "Dolphin portal": "new",
+                        "Global portal": "old",
+                    }[portal_type]
 
-                from pathlib import Path
+                    from pathlib import Path
 
-                original_file_name = (
-                Path(uploaded_file.name)
-                .stem
-                .replace(" ", "_")
-                )       
+                    original_file_name = (
+                        Path(uploaded_file.name).stem.replace(" ", "_")
+                    )
 
-                final_export, error_report = process_file(
-                input_path,
-                pin_master_path=pin_master_path,
-                portal_type=portal_key,
-                global_start_date=global_start_date.strftime("%d/%m/%Y"),
-                global_end_date=global_end_date.strftime("%d/%m/%Y"),
-                global_address=global_address or None,
-                global_cr=global_cr or None,
-                include_source_sheet=include_source_sheet,
-                )
+                    final_export, error_report = process_file(
+                        input_path,
+                        pin_master_path=pin_master_path,
+                        portal_type=portal_key,
+                        global_start_date=global_start_date.strftime("%d/%m/%Y"),
+                        global_end_date=global_end_date.strftime("%d/%m/%Y"),
+                        global_address=global_address or None,
+                        global_cr=global_cr or None,
+                        include_source_sheet=include_source_sheet,
+                    )
+                finally:
+                    if os.path.exists(input_path):
+                        os.remove(input_path)
 
                 batch_files = []
                 batch_summary = []
