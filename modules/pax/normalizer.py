@@ -268,8 +268,10 @@ def normalize_full_name(row):
 # DataFrame Normalization
 # ---------------------------------------------------
 def normalize_dataframe(df):
-    df = df.copy()
+    
 
+    df = df.copy()
+    
     # -----------------------------
     # Full Name + Gender Extraction
     # -----------------------------
@@ -310,6 +312,7 @@ def normalize_dataframe(df):
             normalize_full_name,
             axis=1
         )
+        
 
     # -----------------------------
     # Passport
@@ -318,6 +321,7 @@ def normalize_dataframe(df):
         df["passport_number"] = df["passport_number"].apply(
             normalize_passport
         )
+        
 
     # -----------------------------
     # Mobile
@@ -344,6 +348,7 @@ def normalize_dataframe(df):
             & (df["phone_number"] != ""),
             "mobile_number",
         ] = df["phone_number"]
+        
 
     # -----------------------------
     # Email
@@ -352,6 +357,7 @@ def normalize_dataframe(df):
         df["email"] = df["email"].apply(
             normalize_email
         )
+      
 
     # -----------------------------
     # Gender
@@ -360,7 +366,7 @@ def normalize_dataframe(df):
         df["gender"] = df["gender"].apply(
             normalize_gender
         )
-
+        
     # -----------------------------
     # Address
     # -----------------------------
@@ -368,6 +374,7 @@ def normalize_dataframe(df):
         df["address_line_1"] = df["address_line_1"].apply(
             normalize_address
         )
+      
 
     # -----------------------------
     # Dates
@@ -376,16 +383,20 @@ def normalize_dataframe(df):
         df["start_date"] = df["start_date"].apply(
             normalize_date
         )
+        
 
     if "end_date" in df.columns:
         df["end_date"] = df["end_date"].apply(
             normalize_date
         )
+        
 
     if "dob" in df.columns:
         df["dob"] = df["dob"].apply(
             normalize_date
         )
+        
+
 
     # -----------------------------
     # Nominee
@@ -394,15 +405,18 @@ def normalize_dataframe(df):
         "nominee" in df.columns
         and "nominee_relation" in df.columns
     ):
-        df["nominee"], df["nominee_relation"] = zip(
-            *df.apply(
-                lambda row: normalize_nominee(
-                    row.get("nominee", ""),
-                    row.get("nominee_relation", "")
-                ),
-                axis=1,
+        
+        if len(df) > 0:
+            df["nominee"], df["nominee_relation"] = zip(
+                *df.apply(
+                    lambda row: normalize_nominee(
+                        row.get("nominee", ""),
+                        row.get("nominee_relation", "")
+                    ),
+                    axis=1,
+                )
             )
-        )
+            
 
     # -----------------------------
     # Remove PIN from Address
@@ -416,7 +430,7 @@ def normalize_dataframe(df):
             axis=1
         )
 
-    
+        
 
     return df
 

@@ -189,6 +189,7 @@ def process_file(
     global_cr=None,
     include_source_sheet=False,
 ):
+    
     """
     Main orchestration function.
 
@@ -201,6 +202,7 @@ def process_file(
     all_errors = []
 
     sheets = read_excel_file(file_path)
+    
 
     # Load PIN master if provided
     pin_lookup = None
@@ -214,6 +216,13 @@ def process_file(
         # 1. Header mapping
         mapped = map_headers(sheet["sheet_name"], sheet["data"])
         
+        
+        if mapped.empty:
+            print(
+                f"Skipping empty sheet: "
+                f"{sheet['sheet_name']}"
+            )
+            continue
 
         # 2. Normalize
         normalized = normalize_dataframe(mapped)
