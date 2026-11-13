@@ -95,6 +95,12 @@ if "csv_formatter_result" not in st.session_state:
 if "merger_uploader_key" not in st.session_state:
     st.session_state["merger_uploader_key"] = 0    
 
+if "policy_download_result" not in st.session_state:
+    st.session_state["policy_download_result"] = None
+
+if "policy_upload_digest" not in st.session_state:
+    st.session_state["policy_upload_digest"] = None
+
 def go_home():
     st.session_state["page"] = "home"
 
@@ -1590,85 +1596,120 @@ if st.session_state["page"] == "policy":
 
     
 
+    link_df = None
+    upload_digest = None
     if uploaded_file:
-
+        import hashlib
+        import shutil
         from modules.policy_downloader import (
+            get_policy_summary,
             read_policy_file,
-            get_policy_summary
+            read_policy_links,
         )
 
-        df = read_policy_file(uploaded_file)
+        upload_bytes = uploaded_file.getvalue()
+        upload_digest = hashlib.sha256(upload_bytes).hexdigest()
+        if st.session_state.get("policy_upload_digest") != upload_digest:
+            st.session_state["policy_upload_digest"] = upload_digest
+            st.session_state["policy_download_result"] = None
 
-        policies, charges = get_policy_summary(df)
+        try:
+            df = read_policy_file(uploaded_file)
+            link_df = read_policy_links(uploaded_file)
+        except Exception as exc:
+            st.error(f"Could not read policy workbook: {exc}")
+            link_df = None
+        else:
+            policies, charges = get_policy_summary(df)
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Policies Issued", policies)
+            with col2:
+                st.metric("Charges", f"₹{charges:,.2f}")
 
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.metric(
-                "Policies Issued",
-                policies
+            st.text_area(
+                "Mail Summary",
+                f"Policies Issued: {policies}\nCharges: ₹{charges:,.2f}",
+                height=100,
             )
+            valid_count = int(link_df["is_valid"].sum()) if not link_df.empty else 0
+            invalid_count = len(link_df) - valid_count
+            metric_cols = st.columns(3)
+            metric_cols[0].metric("Records Found", len(link_df))
+            metric_cols[1].metric("Valid PDF Links", valid_count)
+            metric_cols[2].metric("Invalid Records", invalid_count)
+            st.dataframe(df.head())
+            if invalid_count:
+                st.warning("Some rows are invalid and will be included in the failure report.")
+                st.dataframe(link_df.loc[~link_df["is_valid"], [
+                    "policy_number", "traveller_name", "validation_error",
+                ]])
 
-        with col2:
-            st.metric(
-                "Charges",
-                f"₹{charges:,.2f}"
-            )
-
-        summary_text = (
-            f"Policies Issued: {policies}\n"
-            f"Charges: ₹{charges:,.2f}"
-        )
-
-        st.text_area(
-            "Mail Summary",
-            summary_text,
-            height=100
-        )
-
-        st.dataframe(df.head())
-
-        from modules.policy_downloader import read_policy_links
-        link_df = read_policy_links(
-            uploaded_file
-        )
-
-        
-
-    if uploaded_file and st.button("⬇ Download Policy PDFs"):
+    if uploaded_file and link_df is not None and st.button(
+        "⬇ Download Policy PDFs",
+        disabled=link_df.empty,
+    ):
+        import shutil
         from modules.policy_downloader import download_policy_pdfs
 
-        progress_bar = st.progress(0)
+        progress_bar = st.progress(0.0)
         status_box = st.empty()
 
         def update_progress(current, total, elapsed, eta):
-            progress_bar.progress(current / total)
+            progress_bar.progress(min(current / total, 1.0) if total else 1.0)
             status_box.info(
-                f"""
-Downloading {current}/{total}
-Elapsed Time: {int(elapsed)} sec
-"""
+                f"Downloading: {current}/{total} • Elapsed: {int(elapsed)} sec • "
+                f"Estimated remaining: {int(eta)} sec"
             )
 
-        zip_path, ok, fail, total_time = download_policy_pdfs(
-            link_df,
-            progress_callback=update_progress,
-            hub_wise=hub_wise_download
-        )
+        zip_path = None
+        try:
+            zip_path, ok, fail, total_time, failures = download_policy_pdfs(
+                link_df,
+                progress_callback=update_progress,
+                hub_wise=hub_wise_download,
+            )
+            result = {
+                "upload_digest": upload_digest,
+                "zip_data": zip_path.read_bytes(),
+                "zip_name": zip_path.name,
+                "downloaded": ok,
+                "failed": fail,
+                "elapsed": total_time,
+                "failures": failures,
+            }
+            st.session_state["policy_download_result"] = result
+        except Exception as exc:
+            st.error(f"Policy PDF download did not complete: {exc}")
+        finally:
+            if zip_path is not None:
+                shutil.rmtree(zip_path.parent, ignore_errors=True)
 
-        status_box.success(
-            f"✅ Completed\n\n"
-            f"Downloaded: {ok}\n\n"
-            f"Failed: {fail}\n\n"
-            f"Total Time: {int(total_time)} sec"
+    download_result = st.session_state.get("policy_download_result")
+    if download_result:
+        # Keep the completed ZIP in session state and render this widget outside
+        # the start-download button branch so it survives the widget's rerun.
+        st.success(
+            f"✅ Completed • Downloaded: {download_result['downloaded']} • "
+            f"Failed: {download_result['failed']} • "
+            f"Elapsed: {int(download_result['elapsed'])} sec"
         )
-
-        with open(zip_path, "rb") as f:
+        st.download_button(
+            label="📦 Download ZIP",
+            data=download_result["zip_data"],
+            file_name=download_result["zip_name"],
+            mime="application/zip",
+            key="policy_zip_download",
+        )
+        failures = download_result.get("failures", [])
+        if failures:
+            failure_csv = pd.DataFrame(failures).to_csv(index=False).encode("utf-8-sig")
             st.download_button(
-                label="📦 Download ZIP",
-                data=f,
-                file_name=zip_path.name,
-                mime="application/zip"
+                label="📄 Download failure report",
+                data=failure_csv,
+                file_name="policy_download_failures.csv",
+                mime="text/csv",
+                key="policy_failure_report_download",
             )
 
     st.markdown("<hr>", unsafe_allow_html=True)
